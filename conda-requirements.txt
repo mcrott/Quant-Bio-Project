@@ -90,6 +90,7 @@ py-opencv                 4.10.0          headless_py312hd31a7ba_4    conda-forg
 python                    3.12.6          h739c21a_1_cpython    conda-forge
 python_abi                3.12                    5_cp312    conda-forge
 readline                  8.2                  h92ec313_1    conda-forge
+scipy                     1.14.1          py312heb3a901_0    conda-forge
 setuptools                75.1.0             pyhd8ed1ab_0    conda-forge
 snappy                    1.2.1                hd02b534_0    conda-forge
 svt-av1                   2.2.1                ha39b806_0    conda-forge

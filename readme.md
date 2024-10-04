@@ -29,3 +29,9 @@ Current steps
     - .tiffs are the main file format being read(Cv2 library in Python)
 3) Image Segmentation analysis of individual microsporidia spores(Matt)
     - Goal is to learn segmentation techniques and perhaps take a slight detour to track polar tube firing in raw .nd2 files. (Example File in test_folder)
+
+
+
+    
+4) Figure out automatic contrast adjustment
+    - CLAHNE?
