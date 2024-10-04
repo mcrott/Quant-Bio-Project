@@ -1,6 +1,7 @@
 import cv2
 import glob
 import functions as func
+import numpy as np 
 
 
 
