@@ -24,8 +24,10 @@ The goal of our lab project is to generate a script that can effectively analyze
 
 Current steps
 1) Find a dataset(Ethan)
-2) Figure out how to read .nd2 files(Ethan) and tiff(Matt)
+2) Figure out how to read .nd2 files(Ethan) and tif(Matt)
     - The .nd2 file prevents any heavy preprocessing just in case we want to explore this route
-    - .tiffs are the main file format being read(Cv2 library in python)?
+    - .tiffs are the main file format being read(Cv2 library in Python)
 3) Image Segmentation analysis of individual microsporidia spores(Matt)
     - Goal is to learn segmentation techniques and perhaps take a slight detour to track polar tube firing in raw .nd2 files. (Example File in test_folder)
+4) Figure out automatic contrast adjustment
+    - CLAHNE?
