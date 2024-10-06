@@ -1,4 +1,5 @@
 import numpy as np
+import timeit
 
 
 
@@ -14,25 +15,27 @@ def gaussian_kernal(size,std):
         (size,size)
 
     )
-    return kernel/np.sum(kernel)
+    return np.array(kernel/np.sum(kernel))
 
 
-kernel_test = gaussian_kernal(3,1)
 #https://en.wikipedia.org/wiki/Kernel_(image_processing)#:~:text=the%20center%20element.-,Convolution,-%5Bedit%5D
-def convolution(kernel, image):
+def convolution(image,kernel_size,kernel_std):
+    kernel = gaussian_kernal(kernel_size,kernel_std)
     x,y = image.shape
-    #padding the image 
-    image_pad = np.pad(image,((3,3)), mode='reflect')
-    print(image_pad.shape)
+    #padding the image to ensure convolution hits every pixel of original image
+    image_pad = np.pad(image,((kernel_size,kernel_size),(kernel_size,kernel_size)), mode='reflect')
     #created empty image to store output
     convolved_image = np.zeros((x,y), dtype=np.float32)
+    print(np.average(image))
+    start = timeit.default_timer()
+    for i in range(x):
+        for j in range(y):
+            convolved_image[i,j] = np.sum(np.multiply(image_pad[i:i+kernel_size,j:j+kernel_size],kernel))
+    end = timeit.default_timer()
+    print(end-start)
+    print(np.average(convolved_image))
+    return convolved_image
 
-    for i in range(image.shape[0]):
-        for i in range(image.shape[1]):
-            pass
-    convolved_image = []
-
-    pass
 
 def gaussian_filter(image_array,kernal):
     #calculate standard deviations along the x and y axii

@@ -2,46 +2,28 @@ import cv2 as cv
 import numpy as np
 import scipy as sp
 import functions as func
-import matplotlib.pyplot as plt
-import gaussian_filter as gf
+from PIL import Image
+
+from gaussian_filter import convolution
 
 import tracemalloc
 
 tracemalloc.start()
 
-# Your code here
+# Your code herec
 
 #USE EXPLICIT VARIABLE DECLARATION
 #x: int = 3
-import cv2 as cv
-input = "/Users/cmdb/Quant_Bio_Project/Quant-Bio-Project/segmentation_crop.tif"
+
+input = r"C:\Users\test\School\Quant Bio\Quant-Bio-Project\segmentation_crop.tif"
 img = cv.imread(input, cv.IMREAD_UNCHANGED)
-clahe = cv.createCLAHE(clipLimit=30)
-final_img = clahe.apply(img) +50
-
-image1 = func.Image(final_img)
-
-kernal = gf.gaussian_kernal(3,1)
-print(final_img.shape)
-gf.convolution(kernel=kernal,image=final_img)
-# gf.gaussian_filter(final_img,kernal)
-"""
-clahe = cv2.createCLAHE(clipLimit=5)
-final_img = clahe.apply(image_bw) + 30
-"""
+clahe = cv.createCLAHE(clipLimit=20)
+image = clahe.apply(img) +50
+image1 = func.Image(image)
 
 
-"""
-
-Need f(x,y) for gradient and future work for blob detection. In our case, the image if effectively a 3d surface. Whereas
-x,y are pixel coordinates and the z access is pixel intensity. 
-
-
-"""
-
-
-dx,dy = np.gradient(final_img)
-
+test_image= convolution(image,5,3)
+test_image = np.array(test_image,dtype=np.uint16)
 #shows an images
 """
     First step. 
@@ -82,9 +64,9 @@ dx,dy = np.gradient(final_img)
 
 
 
-# cv.imshow('test',final_img)
+# cv.imshow('test',image)
 # cv.waitKey()
-# cv.destroyAllWindows()
+# cv.destroyAlldWindows()
 
 
 
