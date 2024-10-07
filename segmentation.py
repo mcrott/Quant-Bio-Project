@@ -17,14 +17,17 @@ tracemalloc.start()
 #USE EXPLICIT VARIABLE DECLARATION
 #x: int = 3
 
-input = r"/Users/cmdb/Quant_Bio_Project/Quant-Bio-Project/segmentation_image.tif"
-img = cv.imread(input, cv.IMREAD_UNCHANGED)
+input = r"C:\Users\test\School\Quant Bio\Quant-Bio-Project\segmentation_crop.tif"
+img = cv.imread(input, cv.IMREAD_GRAYSCALE)
 clahe = cv.createCLAHE(clipLimit=20)
 image = clahe.apply(img) +50
 image1 = func.Image(image)
-image = convolution(image,10,2)
+image = convolution(image,5,2)
 vert, horz = find_edges_fft(image,sobel_scaling=4)
 
+
+
+#saving horz and vert edge detection
 test_vert = Image.fromarray(np.array(vert,dtype=np.uint16))
 test_vert.save('vert.tif')
 test_horz = Image.fromarray(np.array(horz,dtype=np.uint16))
@@ -32,12 +35,12 @@ test_horz.save('horz.tif')
 #
 horz_vert_sobel = grad_mag(horz,vert)
 #gradient directions
-print(horz_vert_sobel)
-horz_vert = Image.fromarray(np.array(horz_vert_sobel,dtype=np.uint16))
+
+horz_vert = Image.fromarray(np.array(horz_vert_sobel,dtype=np.uint8))
 horz_vert.save('horz-vert.tif')
 
 #smoothing
-image = np.array(image, dtype=np.uint16)
+image = np.array(image, dtype=np.uint8)
 test_image = Image.fromarray(image)
 test_image.save('output1.tif')
 
@@ -83,9 +86,9 @@ test_image.save('output1.tif')
 
 
 
-# cv.imshow('test',image)
-# cv.waitKey()
-# cv.destroyAlldWindows()
+cv.imshow('test',image)
+cv.waitKey()
+cv.destroyAlldWindows()
 
 
 

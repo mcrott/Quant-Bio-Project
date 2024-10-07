@@ -74,6 +74,7 @@ def convolution(image,kernel_size,kernel_std):
     convolved_image = np.real(convolved_image)[pad_size:pad_size+x, pad_size:pad_size+y]
    
     return convolved_image
+    #fft convolution function separated from above. 
 def convol_fft(x,y,pad_shape,padded_image, padded_kernel,pad_size):
     convolv_image = np.zeros(pad_shape,dtype=np.float32)
     convolv = np.fft.fft2(padded_image)

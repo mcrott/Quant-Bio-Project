@@ -2,7 +2,7 @@ from gaussian_filter import convol_fft
 import numpy as np
 import timeit
 
-
+np.random.seed(212312312)
 
 
 # Slow method for finding edges, 180secs for 2304x2304 image
@@ -69,6 +69,20 @@ def find_edges_fft(image,sobel_scaling):
 
 #gradient magnitude
 def grad_mag(horz,vert):
-    return np.sqrt(((horz**2 + vert**2)))
+    
+    normalized = (np.sqrt(((horz**2 + vert**2)))/ np.sqrt(((horz**2 + vert**2))).max())*255
+    directions = np.arctan2(vert,horz)
+    return normalized,directions*(180/np.pi)
 
 
+
+
+
+#test array for thresholding. 
+random_array = np.random.randint(0, 256, size=(25, 25), dtype=np.uint8)
+
+l,u = find_edges_fft(random_array,4)
+
+F,D = grad_mag(l,u)
+
+print(D)
