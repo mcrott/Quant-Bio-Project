@@ -1,5 +1,4 @@
 import numpy as np
-import scipy as sci
 import timeit
 
 
@@ -35,7 +34,7 @@ def gaussian_kernal(size,std):
 #fft*fft method: 0.01 seconds
 
 
-#originial approach
+#originial approach - slow, however correct
 # def convolution(image,kernel_size,kernel_std):
 #     kernel = gaussian_kernal(kernel_size,kernel_std)
 #     x,y = image.shape
@@ -43,16 +42,15 @@ def gaussian_kernal(size,std):
 #     image_pad = np.pad(image,((kernel_size,kernel_size),(kernel_size,kernel_size)), mode='reflect')
 #     #created empty image to store output
 #     convolved_image = np.zeros((x,y), dtype=np.float32)
-#     print(np.average(image))
 #     start = timeit.default_timer()
 #     for i in range(x):
 #         for j in range(y):
 #             convolved_image[i,j] = np.sum(np.multiply(image_pad[i:i+kernel_size,j:j+kernel_size],kernel))
 #     end = timeit.default_timer()
 #     print(end-start)
-#     print(np.average(convolved_image))
 #     return convolved_image
 
+#fft to make things fast 
 #https://en.wikipedia.org/wiki/Kernel_(image_processing)#:~:text=the%20center%20element.-,Convolution,-%5Bedit%5D
 def convolution(image,kernel_size,kernel_std):
     kernel = gaussian_kernal(kernel_size,kernel_std)
@@ -76,33 +74,14 @@ def convolution(image,kernel_size,kernel_std):
     convolved_image = np.real(convolved_image)[pad_size:pad_size+x, pad_size:pad_size+y]
    
     return convolved_image
-
-def find_edges(image):
-    kernel_size = 3
-    vertical = np.array([[0.25, 0.00, -0.25],
-                          [0.5,0.0,-0.5],
-                          [0.25,0.0,-0.25]],dtype=np.float32)
-    horizontal = np.array([
-                            [0.25, 0.50, 0.25],
-                            [0.0, 0.0, 0.0],
-                            [-0.25, -0.5, -0.25]
-                        ], dtype=np.float32)
-    x,y = image.shape
-    image_pad = np.pad(image,((kernel_size,kernel_size),(kernel_size,kernel_size)), mode='reflect')
-    image_vert = np.zeros((x,y), dtype=np.float32)
-    image_horz = np.zeros((x,y), dtype=np.float32)
-    start = timeit.default_timer()
-
-    for i in range(x):
-        for j in range(y):
-            image_vert[i,j] = np.sum(np.multiply(image_pad[i:i+kernel_size,j:j+kernel_size],vertical))
-            image_horz[i,j] = np.sum(np.multiply(image_pad[i:i+kernel_size,j:j+kernel_size],horizontal))
-
-    end = timeit.default_timer()
-    print(end-start)
-    return image_vert, image_horz
-
-
+def convol_fft(x,y,pad_shape,padded_image, padded_kernel,pad_size):
+    convolv_image = np.zeros(pad_shape,dtype=np.float32)
+    convolv = np.fft.fft2(padded_image)
+    raw_convol = convolv * np.fft.fft2(padded_kernel,s=padded_image.shape)
+    convolv_image = np.fft.ifft2(raw_convol)
+    convolv_image = np.real(convolv_image)[pad_size:pad_size+x, pad_size:pad_size+y]
+    
+    return convolv_image
 
 # def convolution(image,kernel_size,kernel_std):
 #     kernel = gaussian_kernal(kernel_size,kernel_std)

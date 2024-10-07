@@ -5,11 +5,11 @@ JHU CMDB Quantitative Biology Lab Project
 Matt Crotteau
 Ethan Yarberry
 ### Conda
-**Check the conda-requirements.txt for dependencies!**
+**Check the requirements.yml for dependencies!**
 
 
 ```
-conda create --name quant-bio-lab --file conda-requirements.txt
+conda create --name quant-bio-lab --file requirements.yml
 conda activate quant-bio-lab
 ```
 
@@ -29,19 +29,27 @@ Current steps
     - The .nd2 file prevents any heavy preprocessing just in case we want to explore this route
     ~~- .tiffs are the main file format being read(Cv2 library in Python)~~
         - Completed. CV2 library
+## Canny Edge Detection
+We are going to try and implement the canny edge detector. 
+https://en.wikipedia.org/wiki/Canny_edge_detector
+
+
 3) Image Segmentation of Condensate Movie
-    1) Create Gaussian Filter for edge detection/blob detection
-    2) Identify Edges/Blob
-    3) Implement strategy to observe growth
-    Sidequest) Implement Tracking algorithm to observe requirement rate in the movie
-        1) Calculate Diffusion rates using previous code(Matt)
 
+    - ~~Create Gaussian Filter for edge detection/blob detection~~
+        - Completed with both manual convolution(slow) and fft(Matt)
+            - Manual convolution(for loops) = 3 seconds for cropped image
+            - Scipy.convolve = 1.18 seconds
+            - fft w/ numpy = 0.01 seconds
 
+    - Identify Edges/Blob
+    - Implement strategy to observe growth and other analysis
+        - Changes in edge area over time?
+    - Sidequest: Implement Tracking algorithm to observe recruitment rate in the movie
+        - Calculate Diffusion rates using previous code(Matt)
+            - No need to code anything, we just need tracking data
+        - Tracking algorithm(ethan)
+
+## Ignore
 Side Quest-  Image Segmentation analysis of individual microsporidia spores(Matt)
     - Goal is to learn segmentation techniques and perhaps take a slight detour to track polar tube firing in raw .nd2 files. (Example File in test_folder)
-
-
-
-    
-4) Figure out automatic contrast adjustment
-    - CLAHNE?

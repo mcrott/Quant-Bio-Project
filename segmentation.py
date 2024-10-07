@@ -5,7 +5,8 @@ import functions as func
 from PIL import Image
 
 from gaussian_filter import convolution
-from gaussian_filter import find_edges
+from edge_detection import find_edges_fft
+from edge_detection import grad_mag
 
 import tracemalloc
 
@@ -16,26 +17,29 @@ tracemalloc.start()
 #USE EXPLICIT VARIABLE DECLARATION
 #x: int = 3
 
-input = r"C:\Users\test\School\Quant Bio\Quant-Bio-Project\segmentation_image.tif"
+input = r"/Users/cmdb/Quant_Bio_Project/Quant-Bio-Project/segmentation_image.tif"
 img = cv.imread(input, cv.IMREAD_UNCHANGED)
 clahe = cv.createCLAHE(clipLimit=20)
 image = clahe.apply(img) +50
 image1 = func.Image(image)
+image = convolution(image,10,2)
+vert, horz = find_edges_fft(image,sobel_scaling=4)
 
-test_vert, test_horz = find_edges(image)
-
-test_vert = Image.fromarray(np.array(test_vert,dtype=np.uint16))
+test_vert = Image.fromarray(np.array(vert,dtype=np.uint16))
 test_vert.save('vert.tif')
-test_horz = Image.fromarray(np.array(test_horz,dtype=np.uint16))
+test_horz = Image.fromarray(np.array(horz,dtype=np.uint16))
 test_horz.save('horz.tif')
-
+#
+horz_vert_sobel = grad_mag(horz,vert)
+#gradient directions
+print(horz_vert_sobel)
+horz_vert = Image.fromarray(np.array(horz_vert_sobel,dtype=np.uint16))
+horz_vert.save('horz-vert.tif')
 
 #smoothing
-test_image= convolution(image,10,3)
-test_image = np.array(test_image,dtype=np.uint16)
-test_image = Image.fromarray(test_image)
+image = np.array(image, dtype=np.uint16)
+test_image = Image.fromarray(image)
 test_image.save('output1.tif')
-
 
 
 
