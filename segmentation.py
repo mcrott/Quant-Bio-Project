@@ -5,6 +5,7 @@ import functions as func
 from PIL import Image
 
 from gaussian_filter import convolution
+from gaussian_filter import find_edges
 
 import tracemalloc
 
@@ -15,15 +16,29 @@ tracemalloc.start()
 #USE EXPLICIT VARIABLE DECLARATION
 #x: int = 3
 
-input = r"C:\Users\test\School\Quant Bio\Quant-Bio-Project\segmentation_crop.tif"
+input = r"C:\Users\test\School\Quant Bio\Quant-Bio-Project\segmentation_image.tif"
 img = cv.imread(input, cv.IMREAD_UNCHANGED)
 clahe = cv.createCLAHE(clipLimit=20)
 image = clahe.apply(img) +50
 image1 = func.Image(image)
 
+test_vert, test_horz = find_edges(image)
 
-test_image= convolution(image,5,3)
+test_vert = Image.fromarray(np.array(test_vert,dtype=np.uint16))
+test_vert.save('vert.tif')
+test_horz = Image.fromarray(np.array(test_horz,dtype=np.uint16))
+test_horz.save('horz.tif')
+
+
+#smoothing
+test_image= convolution(image,10,3)
 test_image = np.array(test_image,dtype=np.uint16)
+test_image = Image.fromarray(test_image)
+test_image.save('output1.tif')
+
+
+
+
 #shows an images
 """
     First step. 
@@ -70,8 +85,9 @@ test_image = np.array(test_image,dtype=np.uint16)
 
 
 
-snapshot = tracemalloc.take_snapshot()
-top_stats = snapshot.statistics('lineno')
+# snapshot = tracemalloc.take_snapshot()
+# top_stats = snapshot.statistics('lineno')
 
-for stat in top_stats[:10]:
-    print(stat)
+# for stat in top_stats[:10]:
+#     print(stat)
+1
