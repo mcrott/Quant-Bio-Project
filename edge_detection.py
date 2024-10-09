@@ -1,7 +1,8 @@
 from gaussian_filter import convol_fft
 import numpy as np
 import timeit
-
+from PIL import Image
+import cv2 as cv
 np.random.seed(212312312)
 
 
@@ -69,20 +70,46 @@ def find_edges_fft(image,sobel_scaling):
 
 #gradient magnitude
 def grad_mag(horz,vert):
-    
-    normalized = (np.sqrt(((horz**2 + vert**2)))/ np.sqrt(((horz**2 + vert**2))).max())*255
+    normalized = (np.sqrt(((horz**2 + vert**2))))
     directions = np.arctan2(vert,horz)
-    return normalized,directions*(180/np.pi)
+    #directions: convert rads to degrees and add 180
+    return normalized,np.rad2deg(directions)
 
 
+#102.92198704200564 sec for 2304x2304
+def non_max_supression(mags,direction):
 
+    x,y = mags.shape
+    start = timeit.default_timer()
 
+    output = np.zeros((x,y),dtype=np.int32)
 
-#test array for thresholding. 
-random_array = np.random.randint(0, 256, size=(25, 25), dtype=np.uint8)
-
-l,u = find_edges_fft(random_array,4)
-
-F,D = grad_mag(l,u)
-
-print(D)
+    for i in range(1,x-1):
+        for j in range(1,y-1):
+            try:
+                #placeholders
+                Y = 255
+                Q = 255
+                #Add interpolation 
+                #north->south
+                if direction[i,j] == 90 or direction[i,j] == 270:
+                    Y = mags[i+1,j]
+                    Q = mags[i-1,j]
+                #east->west
+                elif direction [i,j+1] >= 100 and direction[i,j-1] <=100:
+                    pass
+                #NE->SW
+                elif direction [i+1,j+1] >= 100 and direction [i-1,j-1] <= 100:
+                    pass
+                #NW->SE
+                elif direction [i+1, j-1] >=100 and direction[i-1,j+1] <= 100:
+                    pass
+                pass
+                if mags[i,j] >= Y and mags[i,j] >= Q:
+                    output[i,j] = output[i,j]
+            
+            except IndexError as e:
+                pass
+    end = timeit.default_timer()
+    print(end-start)
+    return output
