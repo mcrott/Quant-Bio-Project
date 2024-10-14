@@ -73,7 +73,60 @@ def grad_mag(horz,vert):
     normalized = (np.sqrt(((horz**2 + vert**2))))
     directions = np.arctan2(vert,horz)
     #directions: convert rads to degrees and add 180
-    return normalized,np.rad2deg(directions)
+    return normalized, directions
+
+
+#321 ---------- 213
+
+'''321 - 213 / 0.1
+
+
+'''
+def interpolate_magnitudes(mags, direction, i, j):
+    angle = direction[i, j] * (180 / np.pi)  # Convert radians to degrees
+    angle = angle % 180  # Normalize angle to [0, 360)
+
+    if (angle >= 0 and angle < 22.5) or (angle >= 157.5 and angle < 180):
+        # East-West
+        Y = mags[i, j + 1]  # East
+        Q = mags[i, j - 1]  # West
+    elif angle >= 22.5 and angle < 67.5:
+        # North-East
+        Y = (mags[i - 1, j + 1] * (1 - (angle - 22.5) / 45) +
+             mags[i, j + 1] * ((angle - 22.5) / 45))
+        Q = (mags[i + 1, j - 1] * (1 - (angle - 22.5) / 45) +
+             mags[i, j - 1] * ((angle - 22.5) / 45))
+    elif angle >= 67.5 and angle < 112.5:
+        # North-South
+        Y = mags[i - 1, j]  # North
+        Q = mags[i + 1, j]  # South
+    elif angle >= 112.5 and angle < 157.5:
+        # North-West
+        Y = (mags[i - 1, j - 1] * (1 - (angle - 112.5) / 45) +
+             mags[i, j - 1] * ((angle - 112.5) / 45))
+        Q = (mags[i + 1, j + 1] * (1 - (angle - 112.5) / 45) +
+             mags[i, j + 1] * ((angle - 112.5) / 45))
+
+    return Y, Q
+
+def non_maximum_suppression(mags, direction):
+    height, width = mags.shape
+    output = np.zeros_like(mags)
+
+    for i in range(1, height - 1):
+        for j in range(1, width - 1):
+            # Interpolate neighboring gradient magnitudes
+            Y, Q = interpolate_magnitudes(mags, direction, i, j)
+
+            # Suppress non-maxima
+            if mags[i, j] >= Y and mags[i, j] >= Q:
+                output[i, j] = mags[i, j]
+            else:
+                output[i, j] = 0
+
+    return output
+
+
 
 
 #102.92198704200564 sec for 2304x2304
@@ -83,7 +136,7 @@ def non_max_supression(mags,direction):
     start = timeit.default_timer()
 
     output = np.zeros((x,y),dtype=np.int32)
-
+    qy_vals = []
     for i in range(1,x-1):
         for j in range(1,y-1):
             try:
@@ -93,23 +146,37 @@ def non_max_supression(mags,direction):
                 #Add interpolation 
                 #north->south
                 if direction[i,j] == 90 or direction[i,j] == 270:
-                    Y = mags[i+1,j]
-                    Q = mags[i-1,j]
+                    Y = mags[i-1,j] #north
+                    Q = mags[i+1,j] #south
                 #east->west
-                elif direction [i,j+1] >= 100 and direction[i,j-1] <=100:
-                    pass
+                elif direction [i,j] == 0 or direction [i,j] == 180:
+                    Y = mags[i,j+1] #east
+                    Q = mags[i,j-1] #west
                 #NE->SW
-                elif direction [i+1,j+1] >= 100 and direction [i-1,j-1] <= 100:
-                    pass
+
+                elif   0 < direction[i,j] < 90 or 180 < direction[i,j] < 270:
+    
+                    #interpolation by competence or incompetence? Lets see if it works
+                    Y = ((mags[i-1,j] - mags[i-1,j+1])*np.cos(np.deg2rad(direction[i,j]))) + mags[i-1,j]
+                    #This might be wrong. 
+                    Q = ((mags[i+1,j] - mags[i+1,j-1])*np.cos(np.deg2rad(direction[i,j]))) + mags[i+1,j-1]
+                    
                 #NW->SE
-                elif direction [i+1, j-1] >=100 and direction[i-1,j+1] <= 100:
-                    pass
-                pass
+                elif 90 < direction[i,j] < 180 or 270 < direction[i,j] < 360:
+                    #interpolation by competence or incompetence? Lets see if it works
+                    Y = ((mags[i-1,j] - mags[i-1,j-1])*np.cos(np.deg2rad(direction[i,j]))) + mags[i-1,j-1]
+                    #This might be wrong. 
+                    Q = ((mags[i+1,j] - mags[i+1,j+1])*np.cos(np.deg2rad(direction[i,j]))) + mags[i+1,j]
+                    
+                qy_vals.append([Q,Y])
                 if mags[i,j] >= Y and mags[i,j] >= Q:
                     output[i,j] = output[i,j]
+                elif mags[i,j] < Y or mags[i,j] < Q:
+                    output[i,j] = 0
             
             except IndexError as e:
                 pass
+
     end = timeit.default_timer()
     print(end-start)
     return output
