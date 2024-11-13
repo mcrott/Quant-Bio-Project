@@ -15,18 +15,24 @@ import matplotlib.pyplot as plt
 
 import tracemalloc
 
-tracemalloc.start()
-
 # Your code herec
 
 #USE EXPLICIT VARIABLE DECLARATION
 #x: int = 3
+#test image == 11
+input = r"/Users/cmdb/Quant_Bio_Project/Quant-Bio-Project/segmentation_test.tif" 
+img = cv.imread(input, cv.IMREAD_GRAYSCALE)
 
-input = r"/Users/cmdb/Quant_Bio_Project/Quant-Bio-Project/segmentation_image.tif" 
+
+
 img = cv.imread(input, cv.IMREAD_GRAYSCALE)
 clahe = cv.createCLAHE(clipLimit=20)
-image = clahe.apply(img) +50 
-input_image = cv.Canny(image, 100,250)
+# image = clahe.apply(img) +50 
+# input_image = cv.Canny(image, 100,250)
 
-outpt = Image.fromarray(np.array(input_image,dtype=np.uint8))
-outpt.save('outpt5.tif')
+# outpt = Image.fromarray(np.array(input_image,dtype=np.uint8))
+# outpt.save('outpt5.tif')
+
+cv.imshow('test',img)
+cv.waitKey()
+cv.destroyAlldWindows()

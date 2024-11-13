@@ -20,7 +20,7 @@ tracemalloc.start()
 #USE EXPLICIT VARIABLE DECLARATION
 #x: int = 3
 
-input = r"/Users/cmdb/Quant_Bio_Project/Quant-Bio-Project/segmentation_image.tif" 
+input = r"/Users/cmdb/Quant_Bio_Project/Quant-Bio-Project/segmentation_test.tif" 
 img = cv.imread(input, cv.IMREAD_GRAYSCALE)
 clahe = cv.createCLAHE(clipLimit=20)
 image = clahe.apply(img) +50 
