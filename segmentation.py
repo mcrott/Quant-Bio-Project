@@ -3,6 +3,15 @@ import numpy as np
 import scipy as sp
 import functions as func
 
+<<<<<<< Updated upstream
+=======
+from gaussian_filter import convolution
+from manual_implemention.edge_detection import find_edges_fft
+from manual_implemention.edge_detection import grad_mag
+from manual_implemention.edge_detection import non_maximum_suppression
+
+import matplotlib.pyplot as plte
+>>>>>>> Stashed changes
 
 import tracemalloc
 
