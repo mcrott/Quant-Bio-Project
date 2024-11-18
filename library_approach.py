@@ -10,6 +10,7 @@ import numpy as np
 import scipy as sp
 import functions as func
 from PIL import Image
+from gaussian_filter import convolution
 
 import matplotlib.pyplot as plt
 
@@ -26,13 +27,13 @@ img = cv.imread(input, cv.IMREAD_GRAYSCALE)
 
 
 img = cv.imread(input, cv.IMREAD_GRAYSCALE)
-clahe = cv.createCLAHE(clipLimit=20)
-# image = clahe.apply(img) +50 
-# input_image = cv.Canny(image, 100,250)
+clahe = cv.createCLAHE(clipLimit=40)
+image = clahe.apply(img)
+input_image = cv.Canny(img, 25,40,apertureSize=3, L2gradient=True)
 
-# outpt = Image.fromarray(np.array(input_image,dtype=np.uint8))
-# outpt.save('outpt5.tif')
+outpt = Image.fromarray(np.array(input_image,dtype=np.uint8))
+outpt.save('outpt5.tif')
 
-cv.imshow('test',img)
-cv.waitKey()
-cv.destroyAlldWindows()
+# cv.imshow('test',input_image)
+# cv.waitKey()
+# cv.destroyAlldWindows()

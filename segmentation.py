@@ -24,8 +24,8 @@ input = r"/Users/cmdb/Quant_Bio_Project/Quant-Bio-Project/segmentation_test.tif"
 img = cv.imread(input, cv.IMREAD_GRAYSCALE)
 clahe = cv.createCLAHE(clipLimit=20)
 image = clahe.apply(img) +50 
-# image1 = func.Image(image)
-# image = convolution(image,3,np.sqrt(3))
+image1 = func.Image(image)
+image = convolution(image,3,np.sqrt(3))
 vert, horz = find_edges_fft(image,sobel_scaling=4)
 image = cv.Canny(image,175,200)
 
@@ -113,12 +113,6 @@ outpt.save('outpt5.tif')
         Apply image segmentation to entire image
         output graph
 """
-
-
-
-cv.imshow('test',outy)
-cv.waitKey()
-cv.destroyAlldWindows()
 
 
 
