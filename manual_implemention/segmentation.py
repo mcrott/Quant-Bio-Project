@@ -2,39 +2,79 @@ import cv2 as cv
 import numpy as np
 import scipy as sp
 import functions as func
+from PIL import Image
 
-<<<<<<< Updated upstream
-=======
 from gaussian_filter import convolution
-from manual_implemention.edge_detection import find_edges_fft
-from manual_implemention.edge_detection import grad_mag
-from manual_implemention.edge_detection import non_maximum_suppression
+from edge_detection import find_edges_fft
+from edge_detection import grad_mag
+from edge_detection import non_maximum_suppression
 
 import matplotlib.pyplot as plte
->>>>>>> Stashed changes
 
 import tracemalloc
 
 tracemalloc.start()
 
-# Your code here
+# Your code herec
 
 #USE EXPLICIT VARIABLE DECLARATION
 #x: int = 3
 
-input = "/Users/cmdb/Quant_Bio_Project/Quant-Bio-Project/segmentation_image.tif"
-img = cv.imread(input, cv.IMREAD_UNCHANGED)
-clahe = cv.createCLAHE(clipLimit=100)
-final_img = clahe.apply(img) +50
+input = r"/Users/cmdb/Quant_Bio_Project/Quant-Bio-Project/segmentation_test.tif" 
+img = cv.imread(input, cv.IMREAD_GRAYSCALE)
+clahe = cv.createCLAHE(clipLimit=20)
+image = clahe.apply(img) +50 
+image1 = func.Image(image)
+image = convolution(image,3,np.sqrt(3))
+vert, horz = find_edges_fft(image,sobel_scaling=4)
+image = cv.Canny(image,175,200)
 
-image1 = func.Image(final_img)
-"""
-clahe = cv2.createCLAHE(clipLimit=5)
-final_img = clahe.apply(image_bw) + 30
-"""
+outpt1,outpt2 = grad_mag(vert=vert,horz=horz)
 
-for i in range(0,2304,16):
-    print(i*2)
+
+
+
+strong_thres = 75
+weak_thres = 0
+
+
+# outpt1 = non_maximum_suppression(outpt1,outpt2)
+
+strong_edges = (outpt1 >= strong_thres)
+weak_edges = (outpt1 < strong_thres) & (outpt1 >= weak_thres)
+non_edge = (outpt1 < weak_thres)
+
+outpt1[strong_edges] = 255
+outpt1[weak_edges] = 100
+outpt1[non_edge] = 0
+
+
+outpt = Image.fromarray(np.array(image,dtype=np.uint8))
+outpt.save('outpt5.tif')
+
+
+# plt.hist(x=outpt1)
+# plt.show()
+
+
+# #saving horz and vert edge detection
+# test_vert = Image.fromarray(np.array(vert,dtype=np.uint16))
+# test_vert.save('vert.tif')
+# test_horz = Image.fromarray(np.array(horz,dtype=np.uint16))
+# test_horz.save('horz.tif')
+# #
+# horz_vert_sobel = grad_mag(horz,vert)
+# #gradient directions
+
+# horz_vert = Image.fromarray(np.array(horz_vert_sobel,dtype=np.uint8))
+# horz_vert.save('horz-vert.tif')
+
+# #smoothing
+# image = np.array(image, dtype=np.uint8)
+# test_image = Image.fromarray(image)
+# test_image.save('output1.tif')
+
+
 
 #shows an images
 """
@@ -76,14 +116,9 @@ for i in range(0,2304,16):
 
 
 
-# cv.imshow('test',final_img)
-# cv.waitKey()
-# cv.destroyAlldWindows()
+# snapshot = tracemalloc.take_snapshot()
+# top_stats = snapshot.statistics('lineno')
 
-
-
-snapshot = tracemalloc.take_snapshot()
-top_stats = snapshot.statistics('lineno')
-
-for stat in top_stats[:10]:
-    print(stat)
+# for stat in top_stats[:10]:
+#     print(stat)
+1

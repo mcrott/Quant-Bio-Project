@@ -70,6 +70,8 @@ class Image():
         tiling_dictionary = {}
         x,y = self.image.shape
         #Tiling at 16,32,64
+        if x%16 != 0:
+            return 
         tiles = [16,32,64,256]
         #tiles the image into 144 16x16 arrays.  -1 is added to avoid out of bound indexing
         """
