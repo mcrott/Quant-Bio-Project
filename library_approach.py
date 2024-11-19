@@ -10,7 +10,8 @@ import numpy as np
 import scipy as sp
 import functions as func
 from PIL import Image
-from gaussian_filter import convolution
+from gaussian_filter import gaussian_kernal
+
 
 import matplotlib.pyplot as plt
 
@@ -21,19 +22,17 @@ import tracemalloc
 #USE EXPLICIT VARIABLE DECLARATION
 #x: int = 3
 #test image == 11
+
+kernel = gaussian_kernal(3,np.sqrt(3))
+#Thresholding for 
+low_thresh: int = 13
+high_thresh: int = 50
+
 input = r"/Users/cmdb/Quant_Bio_Project/Quant-Bio-Project/segmentation_test.tif" 
 img = cv.imread(input, cv.IMREAD_GRAYSCALE)
-
-
-
-img = cv.imread(input, cv.IMREAD_GRAYSCALE)
-clahe = cv.createCLAHE(clipLimit=40)
-image = clahe.apply(img)
-input_image = cv.Canny(img, 25,40,apertureSize=3, L2gradient=True)
-
-outpt = Image.fromarray(np.array(input_image,dtype=np.uint8))
-outpt.save('outpt5.tif')
-
-# cv.imshow('test',input_image)
-# cv.waitKey()
-# cv.destroyAlldWindows()
+image = cv.filter2D(img,-1,kernel)
+ret,thresh = cv.threshold(image,low_thresh,high_thresh,cv.THRESH_BINARY)
+contours,hierarchy = cv.findContours(thresh, 1, 2)
+test = cv.drawContours(image, contours, -5, (0, 255, 0), 1) 
+plt.imshow(test)
+plt.show()
