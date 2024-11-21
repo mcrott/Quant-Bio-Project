@@ -10,7 +10,7 @@ import numpy as np
 import scipy as sp
 import functions as func
 from PIL import Image
-from gaussian_filter import gaussian_kernal
+from old_files.gaussian_filter import gaussian_kernal
 
 
 import matplotlib.pyplot as plt
