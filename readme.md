@@ -40,9 +40,9 @@ Current Steps
     - 
     ### Goal
     Determine the area of individual blobs identified in step 1. 
-    ##### Progress
+    ##### Progress **[COMPLETED 20NOV2024]**
     This is successfully outputed by findContours.
-    ##### Future Work       **[COMPLETED 20NOV2024]**
+    ##### Future Work       
     Quantification of each blob. This can be done with area and fluorescent intensity. 
 3) Stack Implementation
     - 
@@ -73,4 +73,4 @@ Current Steps
     4) calculate the number of fluorophores in each blob?
 
     #### Progress [Updated 21NOV2024]
-    Havent started, still brainstorming
+    Havent started, still brainstorming. I have previous code that calculates the MSD + Diffusion rate. 
