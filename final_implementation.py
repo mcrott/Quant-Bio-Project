@@ -207,7 +207,7 @@ class Objects:
                 for blobs in self.blobs:
                     coords_list.append(self.flatten_coords(self.blobs[blobs]))
                 
-                frameint = 0.250 #ms
+                frameint = 20 #ms
                      
 
                 msd_fast = {}
@@ -567,7 +567,7 @@ filter_val:int = 10
 ##Pixel Size. This is used for area calculations. Where the area of a pixel is pixelSize**2
 pixel_size: float = 0.159
 
-tiff_stack = io.imread("cell2.tif",plugin='tifffile')
+tiff_stack = io.imread("/Users/cmdb/Quant_Bio_Project/Quant-Bio-Project/cell2.tif",plugin='tifffile')
 tiff_stack = (tiff_stack/256).astype(np.uint8)
 copied = np.copy(tiff_stack)
 frame_dict = {}
