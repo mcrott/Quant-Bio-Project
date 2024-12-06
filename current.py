@@ -84,6 +84,8 @@ class Objects:
         self.diff_coef = []
         self.diff_r2 = []
         self.removal_report = {}
+        self.pdf = False
+        self.name = "Quant Bio Project"
         
         self.initial_blobs()
     #new input is going to add blobs based on the cost matrix
@@ -233,6 +235,19 @@ class Objects:
                         self.msd_weights.append(c)     
             
                 return
+    def pull_out_xy_vals(self):
+        x = []
+        y = []
+        frames = []
+        for j in self.blobs:
+                x_values, y_values = zip(*self.flatten_coords(self.blobs[j]))
+                x.append(x_values)
+                y.append(y_values)
+                first_elements = [sublist[0] for sublist in self.blobs[j]]
+                frames.append(first_elements)
+        self.x = x
+        self.y = y
+        self.unique_frames = frames           
     def calc_diffusion(self, dimension = None, clipfactor = None,filter = False,filter_r2 = None):
                 num_filtered = 0
                 self.ntracks = len(self.msd)
@@ -294,15 +309,160 @@ class Objects:
                         self.diff_r2.append(r2)
                 self.intercept = inter
                 self.coef = coef
+    def post_filter_plot_tracks(self):
+                self.space_units = 'uM'
+                fig,ax = plt.subplots()
+                for i in range(self.num_blobs):
+                        ax.plot(self.x[i], self.y[i],linewidth =0.25)
+                ax.set_xlabel("X " + self.space_units)
+                ax.set_ylabel("Y " + self.space_units)
+                self.name = "Quant Bio Project"
+                self.min_max = {'X-Max': 256, 'X-Min': 0,'Y-Max': 256, 'Y-Min': 0,  }
+                ax.set(xlim=(self.min_max['X-Min']-3, self.min_max['X-Max']+3), ylim=(self.min_max['Y-Min']-3, self.min_max['Y-Max']+3))
+
+
+                plt.title(f'Tracks of {self.name}')
+                plt.axis('equal')
+                if self.pdf == True:
+                        plt.savefig(self.path + '\\' +self.name +"_tracks_post.pdf",dpi=300,format='pdf')
+                else:
+                        plt.savefig(r"/Users/cmdb/Quant_Bio_Project/Quant-Bio-Project/tracks_plot.png" ,dpi=300)
+    def plot_mean_msd_diffusion(self):
+                fig, ax = plt.subplots()
+
+                vals = self.msd_average[self.msd_average > 0]
+                # 
+                self.mean_std = np.nan_to_num(self.mean_std,0)
+                ax.plot(self.timepoints[:len(vals)],vals)
+
+                ax.errorbar(self.timepoints[:len(vals)],vals,yerr = self.mean_std[:len(vals)],alpha = 0.25)
+
+                m_len = int(len(vals)*0.25)
+
+                m = self.timepoints[:len(vals)].reshape(-1, 1)
+
+                model = LinearRegression().fit(m[:m_len],vals[:m_len])
+                d_r2 = model.score(m[:m_len],vals[:m_len])
+
+                y= (model.coef_)
+                b = np.average(model.intercept_)
+                funct = y*m+b
+
+                ax.set_xlabel(r"(Δt)(s)")
+                ax.set_ylabel(r'(MSD)($µm^{2}$)')
+                ax.plot(m,funct,color='black')
+                plt.title(f"Mean MSD Plot with Diffusion Slope of {self.name}", wrap=True )
+                diff_value = y/(2*self.dimensions)
+                plt.text(0.55,0.9,f"D = {diff_value[0]:.2e} $µm^{2}/s$",wrap=True,transform=ax.transAxes)
+                plt.text(.55, 0.85,f"$R^{2}$ = {round(d_r2,3)}",wrap=True,transform=ax.transAxes)
+                plt.ylim(0,max(self.msd_average)+0.15)
+
+                if self.pdf == True:
+                        plt.savefig(self.path + '\\' +self.name +"_msd-plot.pdf",dpi=300,format='pdf')
+                else:
+                        plt.savefig("/Users/cmdb/Quant_Bio_Project/Quant-Bio-Project/mean_diffusion_msd.png",dpi=300)   
+    def plot_msd(self):
+            fig,ax = plt.subplots()
+            ax.set_xlabel(r"(Δt)(s)")
+            ax.set_ylabel(r'(MSD)($µm^{2}$)')
+            plt.title(f" MSD Plot of {self.name}", wrap=True )
+            for a in range(0,len(self.msd)):
+                    ax.plot(self.timepoints,self.msd[a])
+            if self.pdf == True:
+                    plt.savefig(self.path + '\\' +self.name +"_msd-plot.pdf",dpi=300,format='pdf')
+            else:
+                    plt.savefig(r"/Users/cmdb/Quant_Bio_Project/Quant-Bio-Project/msd_plot.png" ,dpi=300)    
+    def calc_mean_msd(self):
+        """Calculates the mean MSD among remaining tracks post diffusion/loglog removal. 
+        
+        This can be called before removal. Function call order in spt_workflow.py should be updated.
+
+        Returns:
+            self.msd_average is updated with the values
+        """
+        #updating timepoints incase there was a track removal
+        msd_data = np.copy(self.msd)
+        #checking to see if the msd computation has been completed
+        if self.num_blobs == None:
+                return print("You have not calculated any MSDs with msd_compute()")
+        time = self.timepoints
+        sum_weights = np.zeros(len(time))
+        for i in self.msd_weights:
+                sum_weights = sum_weights + i 
+        sum_msd_weights = np.zeros(len(time))
+        for i in range(0,len(msd_data)):                    
+                msd_w = self.msd_weights
+                #boolean indexing to determine what to keep
+                valid = ~np.isnan(msd_data[i])
+                msd_valid = msd_data[i][valid]
+                sum_msd_weights[valid] += np.multiply(msd_valid,msd_w[i][valid])      
+                
+        mean_msd = np.divide(sum_msd_weights,sum_weights)       
+        self.msd_average = mean_msd
+        
+        #weighted varience 
+        sum_weighted_varience = np.zeros(len(time))
+        sum_sq_weight = np.zeros(len(time))
+        
+        for i in range(0,len(msd_data)):
+                val = ~np.isnan(msd_data[i])
+                alpha = msd_data[i][val]
+                msd_weights = self.msd_weights
+                nums = msd_weights[i][val]   
+                sum_weighted_varience[val] += np.multiply(nums,((alpha - mean_msd[val])**2))
+                sum_sq_weight[val] += nums**2
+        
+        std_calc_first_bot =  (sum_weights**2 - sum_sq_weight)      
+        std_calc_first = sum_weights / std_calc_first_bot
+        std_calc = np.sqrt(np.multiply(std_calc_first,sum_weighted_varience))
+        nfreedom = (np.divide(sum_weights**2, sum_sq_weight))
+        
+        
+        self.mean_degree_freedom = nfreedom
+        self.mean_std = std_calc
+        return   
+    def plot_mean_msd_diffusion(self):
+                fig, ax = plt.subplots()
+                self.dimensions = 2
+
+                vals = self.msd_average[self.msd_average > 0]
+                # 
+                self.mean_std = np.nan_to_num(self.mean_std,0)
+                ax.plot(self.timepoints[:len(vals)],vals)
+
+                ax.errorbar(self.timepoints[:len(vals)],vals,yerr = self.mean_std[:len(vals)],alpha = 0.25)
+
+                m_len = int(len(vals)*0.25)
+
+                m = self.timepoints[:len(vals)].reshape(-1, 1)
+
+                model = LinearRegression().fit(m[:m_len],vals[:m_len])
+                d_r2 = model.score(m[:m_len],vals[:m_len])
+
+                y= (model.coef_)
+                b = np.average(model.intercept_)
+                funct = y*m+b
+
+                ax.set_xlabel(r"(Δt)(s)")
+                ax.set_ylabel(r'(MSD)($µm^{2}$)')
+                ax.plot(m,funct,color='black')
+                plt.title(f"Mean MSD Plot with Diffusion Slope of {self.name}", wrap=True )
+                diff_value = y/(2*self.dimensions)
+                plt.text(0.55,0.9,f"D = {diff_value[0]:.2e} $µm^{2}/s$",wrap=True,transform=ax.transAxes)
+                plt.text(.55, 0.85,f"$R^{2}$ = {round(d_r2,3)}",wrap=True,transform=ax.transAxes)
+                plt.ylim(0,max(self.msd_average)+0.15)
+                if self.pdf == True:
+                        plt.savefig(self.path + '\\' +self.name +"_msd-plot.pdf",dpi=300,format='pdf')
+                else:
+                        plt.savefig(r"/Users/cmdb/Quant_Bio_Project/Quant-Bio-Project/mean_msd_plot.png",dpi=300) 
     def animate_xy(self,a_fps,milli_per_frame,fade = False, fade_num = 20):
 
                 self.min_max = {'X-Max': 256, 'X-Min': 0,'Y-Max': 256, 'Y-Min': 0,  }
-
                 unique_frames = range(len(self.frames.keys()))
                 #this should pull the coordinates for each track 
                 def get_coordinates(frame, obj,track_num):
                         indices = obj.blobs[track_num] == frame
-                        return self.x[track_num][indices],self.y[track_num][indices],self.z[track_num][indices]
+                        return self.x[track_num][indices],self.y[track_num][indices]
                 track_list_x = []
                 track_list_y = []
                 track_list_z = []
@@ -405,7 +565,7 @@ high_thresh: int = 50
 # we want anything equal to or greater than 5
 filter_val:int = 10
 ##Pixel Size. This is used for area calculations. Where the area of a pixel is pixelSize**2
-pixel_size: float = 0.115 
+pixel_size: float = 0.159
 
 tiff_stack = io.imread("/Users/cmdb/Quant_Bio_Project/Quant-Bio-Project/cell2.tif",plugin='tifffile')
 tiff_stack = (tiff_stack/256).astype(np.uint8)
@@ -432,8 +592,13 @@ for i in range(len(keys)-1):
     blobs.new_input(n=keys[i],n1=keys[i+1])
 blobs.updateblobs(15)
 blobs.msd_compute()
+blobs.calc_mean_msd()
 blobs.calc_diffusion()
+blobs.pull_out_xy_vals()
+blobs.post_filter_plot_tracks()
+blobs.plot_mean_msd_diffusion()
+blobs.plot_msd()
 
-blobs.animate_xy(a_fps=30,milli_per_frame=1000)
+# blobs.animate_xy(a_fps=30,milli_per_frame=1000)
 
 
