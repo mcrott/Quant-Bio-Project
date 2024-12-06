@@ -3,3 +3,10 @@ good_enough_practices.md
 *.tif
 *.jpg
 chatgpt_output_normalization.md
+generation_photo.py
+test.py
+*.avi
+*.gif
+*.png
+*.png
+msd_plot.png

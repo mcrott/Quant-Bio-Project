@@ -326,7 +326,7 @@ class Objects:
                 if self.pdf == True:
                         plt.savefig(self.path + '\\' +self.name +"_tracks_post.pdf",dpi=300,format='pdf')
                 else:
-                        plt.savefig(r"/Users/cmdb/Quant_Bio_Project/Quant-Bio-Project/tracks_plot.png" ,dpi=300)
+                        plt.savefig(r"tracks_plot.png" ,dpi=300)
     def plot_mean_msd_diffusion(self):
                 fig, ax = plt.subplots()
 
@@ -371,7 +371,7 @@ class Objects:
             if self.pdf == True:
                     plt.savefig(self.path + '\\' +self.name +"_msd-plot.pdf",dpi=300,format='pdf')
             else:
-                    plt.savefig(r"/Users/cmdb/Quant_Bio_Project/Quant-Bio-Project/msd_plot.png" ,dpi=300)    
+                    plt.savefig(r"msd_plot.png" ,dpi=300)    
     def calc_mean_msd(self):
         """Calculates the mean MSD among remaining tracks post diffusion/loglog removal. 
         
@@ -454,7 +454,7 @@ class Objects:
                 if self.pdf == True:
                         plt.savefig(self.path + '\\' +self.name +"_msd-plot.pdf",dpi=300,format='pdf')
                 else:
-                        plt.savefig(r"/Users/cmdb/Quant_Bio_Project/Quant-Bio-Project/mean_msd_plot.png",dpi=300) 
+                        plt.savefig(r"mean_msd_plot.png",dpi=300) 
     def animate_xy(self,a_fps,milli_per_frame,fade = False, fade_num = 20):
 
                 self.min_max = {'X-Max': 256, 'X-Min': 0,'Y-Max': 256, 'Y-Min': 0,  }
@@ -567,11 +567,12 @@ filter_val:int = 10
 ##Pixel Size. This is used for area calculations. Where the area of a pixel is pixelSize**2
 pixel_size: float = 0.159
 
-tiff_stack = io.imread("/Users/cmdb/Quant_Bio_Project/Quant-Bio-Project/cell2.tif",plugin='tifffile')
+tiff_stack = io.imread("cell2.tif",plugin='tifffile')
 tiff_stack = (tiff_stack/256).astype(np.uint8)
 copied = np.copy(tiff_stack)
 frame_dict = {}
 for i in range(len(tiff_stack)):
+    tiff_stack[i,:,:] = cv.filter2D(tiff_stack[i,:,:],-1,kernel)
     ret,thresh = cv.threshold(tiff_stack[i,:,:],low_thresh,high_thresh,cv.THRESH_BINARY)
     contours,hierarchy = cv.findContours(thresh, 1, 2)
     #filtering out contours less than 10
