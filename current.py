@@ -1,0 +1,439 @@
+import cv2 as cv
+import numpy as np
+import matplotlib.pyplot as plt
+import skimage.io as io
+from scipy.spatial.distance import cdist
+from sklearn.linear_model import LinearRegression
+import matplotlib.animation as animation
+def msd_fft(r):
+                """This is function that calculates the MSD. This was copied from the stack exchange link below, so all credit goes to that post
+                
+                https://stackoverflow.com/questions/34222272/computing-mean-square-displacement-using-python-and-fft
+                Args:
+                    r (array): input array in x,y(,z) 
+
+                Returns:
+                    array: Returns the MSD values for that track. 
+                """
+                def autocorrFFT(x):
+                        N=len(x)
+                        F = np.fft.fft(x, n=2*N)  #2*N because of zero-padding
+                        PSD = F * F.conjugate()
+                        res = np.fft.ifft(PSD)
+                        res= (res[:N]).real   #now we have the autocorrelation in convention B
+                        n=N*np.ones(N)-np.arange(0,N) #divide res(m) by (N-m)
+                        return res/n #this is the autocorrelation in convention A
+                N=len(r)
+                D=np.square(r).sum(axis=1) 
+                D=np.append(D,0) 
+                S2=sum([autocorrFFT(r[:, i]) for i in range(r.shape[1])])
+                Q=2*D.sum()
+                S1=np.zeros(N)
+                for m in range(N):
+                        Q=Q-D[m-1]-D[N-m]
+                        S1[m]=Q/(N-m)
+                return S1-2*S2  
+class Objects:
+    def __msd_fft(self,r):
+                """This is function that calculates the MSD. This was copied from the stack exchange link below, so all credit goes to that post
+                
+                https://stackoverflow.com/questions/34222272/computing-mean-square-displacement-using-python-and-fft
+                Args:
+                    r (array): input array in x,y(,z) 
+
+                Returns:
+                    array: Returns the MSD values for that track. 
+                """
+                def autocorrFFT(x):
+                        N=len(x)
+                        F = np.fft.fft(x, n=2*N)  #2*N because of zero-padding
+                        PSD = F * F.conjugate()
+                        res = np.fft.ifft(PSD)
+                        res= (res[:N]).real   #now we have the autocorrelation in convention B
+                        n=N*np.ones(N)-np.arange(0,N) #divide res(m) by (N-m)
+                        return res/n #this is the autocorrelation in convention A
+                N=len(r)
+                D=np.square(r).sum(axis=1) 
+                D=np.append(D,0) 
+                S2=sum([autocorrFFT(r[:, i]) for i in range(r.shape[1])])
+                Q=2*D.sum()
+                S1=np.zeros(N)
+                for m in range(N):
+                        Q=Q-D[m-1]-D[N-m]
+                        S1[m]=Q/(N-m)
+                return S1-2*S2
+    def flatten_coords(self,list_of_lists):
+        return [sublist[1] for sublist in list_of_lists if len(sublist) > 1]
+    def initial_blobs(self):
+        list_frames = list(frame_dict.keys())
+        first_frame = self.frames[list_frames[0]]
+        for i in range(len(first_frame)):
+            self.blobs[f"Blob {self.num_blobs + 1}"] = [first_frame[i]]
+            self.num_blobs = len(self.blobs.keys())
+        self.current_blobs.append(list(self.blobs.keys()))
+        return  
+    def __init__(self,frame_dict):
+        #this will contain all the blobs
+        self.frames = frame_dict
+        num_frames = len(frame_dict.keys())
+        self.blobs: dict = {}
+        self.num_blobs = len(self.blobs.keys())
+        self.current_blobs = []
+        self.msd = []
+        self.msd_weights = []
+        self.diff_coef = []
+        self.diff_r2 = []
+        self.removal_report = {}
+        
+        self.initial_blobs()
+    #new input is going to add blobs based on the cost matrix
+    def elucidian_distance(self,n_coords,n1_coords):
+        # based on 2d distance formula of sqrt((x2-x1)**2 + (y2-y1)**2))
+        x1 = n_coords[0]
+        y1 = n_coords[1]
+        x2 = n1_coords[0]
+        y2 = n1_coords[1]
+        distance = np.sqrt((x2-x1)**2 + (y2-y1)**2)
+        return distance
+    def distance_thresholding(self,distance,threshold):
+        if distance > threshold:
+            return False
+        else:
+            return True
+    def pairing(self,matrix,coords_n,coords_n1):
+        rows = matrix.min(axis=1).argsort()
+        cols = matrix.argmin(axis=1)[rows]
+        usedRows = set()
+        usedCols = set()
+        unpaired_rows = set()
+        unpaired_cols = set()
+        pairs = []
+        unpaired = []
+        for row,col in zip(rows,cols):
+            #skips previously used rows/columns
+            if row in usedRows or col in usedCols:
+                continue
+            n= coords_n[row]
+            n1 = coords_n1[col]
+            distance = self.elucidian_distance(n,n1)
+            if self.distance_thresholding(distance,15) == True:
+                    pairs.append([n,n1])
+                    usedRows.add(row)
+                    usedCols.add(col)
+            if row in unpaired_rows or col in unpaired_cols:
+                continue
+            if self.distance_thresholding(distance,15) != True:
+                    unpaired.append([n,n1])
+                    unpaired_rows.add(row)
+                    unpaired_cols.add(col)
+            
+                
+                
+
+        return pairs,unpaired
+    def add_blob(self,add):
+        self.blobs[f"Blob {self.num_blobs + 1}"] = [add]
+        self.num_blobs += 1
+    def find_contours_in_frame(self,val,frame = True):
+        #current = true
+        if frame == True:
+            n = self.current_frame
+            list_to_enum = self.flatten_coords(self.frames[n])
+            for index, sublist in enumerate(list_to_enum):
+                if sublist == val:
+                    #returns the index of self.frames[current]
+                    return index
+        if frame == False:
+            n1 = self.next_frame
+            list_to_enum = self.flatten_coords(self.frames[n1])
+            for index, sublist in enumerate(list_to_enum):
+                if sublist == val:
+                    #returns the index of self.frames[current]
+                    return index
+    def praying_for_blobs(self,pairs,unpairs,n,n1):
+        list_of_keys = list(self.blobs.keys())
+        count = 0
+        peared = set()
+        for p_index,p_sublist in enumerate(pairs):
+            for j in self.blobs:
+                val = self.blobs[j]
+                if p_sublist[0] == val[-1][1]:
+                    for index, sublist in enumerate(n1):
+                         if sublist == p_sublist[1]:
+                             self.blobs[j].append(self.frames[self.next_frame][index])
+                             peared.add(p_index)
+        for p_index,p_sublist in enumerate(pairs):
+            if p_index in peared:
+                continue
+            for index, sublist in enumerate(n):
+                    if sublist == p_sublist[0]:
+                        self.add_blob(self.frames[self.current_frame][index])
+        for up_index,up_sublist in enumerate(unpairs):
+            for index, sublist in enumerate(n):
+                if sublist == up_sublist[0]:
+                    self.add_blob(self.frames[self.current_frame][index])
+
+        #shameless chatgpt
+        for indices in range(len(pairs)):
+            if indices in peared:
+                continue   
+    def new_input(self,n,n1):
+        self.current_frame = n
+        self.next_frame = n1
+        coords_n = flatten_coords(self.frames[n]) #current
+        coords_n1 = flatten_coords(self.frames[n1]) #next frame
+        cost_matrix = cdist(coords_n,coords_n1)
+        pairs,unpairs = self.pairing(cost_matrix,coords_n,coords_n1)
+        self.praying_for_blobs(pairs,unpairs,coords_n,coords_n1)
+    def updateblobs(self,threshold):
+        #remove low track num blobs
+        placeholder_dict: dict = {}
+        max = 0
+        for blob in self.blobs:
+            if len(self.blobs[blob]) > threshold:
+
+                placeholder_dict[blob] = self.blobs[blob]
+            if len(self.blobs[blob]) > max:
+                 max = len(self.blobs[blob])
+        self.blobs = placeholder_dict
+        self.num_blobs = len(self.blobs.keys())
+        self.max_spots = max
+    def msd_compute(self):
+                """MSD Computation based on msdanalyzer computeMSD function.  msd.fft calculation is pulled from stack exchange(see that function for the link)
+                """
+                coords_list = []
+                for blobs in self.blobs:
+                    coords_list.append(self.flatten_coords(self.blobs[blobs]))
+                
+                frameint = 0.250 #ms
+                     
+
+                msd_fast = {}
+                tolerance = 12
+                max_spots = self.max_spots
+                self.timepoints = np.arange(0,max_spots)*frameint
+                         
+                #update coords list
+                for i in range(self.num_blobs):
+                        weights = np.arange(1,len(coords_list[i])+1)
+                        reversed_weights = weights[::-1]
+                        results = (self.__msd_fft(np.array(coords_list[i])))
+                        #setting t0 to 0 do 
+                        results[0] = 0
+                        prenan = np.empty((max_spots - len(coords_list[i])))
+                        prenan[:] = np.nan
+                        zers = np.zeros((max_spots - len(coords_list[i])))
+                        # c is for weights
+                        #b is results 
+                        c = np.concatenate([reversed_weights,zers])
+                        b = np.concatenate([results,prenan])
+                        msd_fast[i] = [self.timepoints,b,c]
+                        #updating self
+                        self.msd.append(b)
+                        self.msd_weights.append(c)     
+            
+                return
+    def calc_diffusion(self, dimension = None, clipfactor = None,filter = False,filter_r2 = None):
+                num_filtered = 0
+                self.ntracks = len(self.msd)
+                removed_indices = []
+                if clipfactor == None:
+                        clip = 0.25
+                else: 
+                        if clipfactor > 1:
+                                clip = 1
+                        if clipfactor < 0:
+                                clip = 0
+                        if clipfactor <= 1 or clipfactor >= 0:
+                                clip = clipfactor
+                if filter == True and filter_r2 != None: 
+                        filter_val_r2 = filter_r2
+                if filter == True and filter_r2 == None:
+                        filter_val_r2 = 0.8
+                if dimension == None:
+                        n = 2
+                if dimension != None:
+                        n = dimension
+                # MSD = 2nDt
+                time = self.timepoints
+               
+                coef = []
+                inter = []
+                #same idea for loglog, just dont take the log of the values
+                print("Calculating diffusion coeffcient in uM^2/s through the weighted linear fit of " + str(self.num_blobs) + " MSD curves.")
+                print("Only taking the first " + str(int(clip*100)) + " percent of each MSD curve. ") 
+                if filter_r2 == True:
+                        print("Filtering out tracks that have an r2 value below " + str(filter_val_r2))
+                for i in range(len(self.msd)):
+                        #REMOVE LATER   
+                        msds= self.msd[i]
+                        valid = ~np.isnan(msds)
+                        y = self.msd[i][valid]
+                        x = time[valid].reshape((-1,1))
+                        weights = self.msd_weights[i][valid]
+                        length = int(np.round(len(y)*clip))
+                        x_axis = x[:length]
+                        y_axis = y[:length]
+                        # if x_axis.shape == (0,) or y_axis.shape == (0,) or len(x_axis) < 5:
+                        #         num_filtered += 1
+                        #         removed_indices.append(False)
+                        #         continue
+                        model = LinearRegression().fit(x_axis,y_axis,sample_weight=weights[:length])
+                        # Diffusion_Coefficient = MSD/2n
+                        r2 = model.score(x_axis,y_axis)
+
+                        # if filter == True and (r2 < filter_val_r2 or r2 == np.nan) :
+                        #         removed_indices.append(False)
+                        #         num_filtered += 1
+                        #         continue
+                        coef.append(model.coef_)
+                        inter.append(model.intercept_)
+                        diff = np.divide(model.coef_, 2*n)
+                        removed_indices.append(True)
+                        self.diff_coef.append(float(diff[0]))
+                        self.diff_r2.append(r2)
+                self.intercept = inter
+                self.coef = coef
+    def animate_xy(self,a_fps,milli_per_frame,fade = False, fade_num = 20):
+
+                self.min_max = {'X-Max': 256, 'X-Min': 0,'Y-Max': 256, 'Y-Min': 0,  }
+
+                unique_frames = range(len(self.frames.keys()))
+                #this should pull the coordinates for each track 
+                def get_coordinates(frame, obj,track_num):
+                        indices = obj.blobs[track_num] == frame
+                        return self.x[track_num][indices],self.y[track_num][indices],self.z[track_num][indices]
+                track_list_x = []
+                track_list_y = []
+                track_list_z = []
+                #these lines will fill in your x coords with np.nans. so if your length is 1000 but a track is only visable for 300-500, then 1-299 and 501-1000 will be np.nan
+                for j in range(self.num_blobs):
+                        storage_x = []
+                        storage_y = []
+                        storage_z = []
+                        for i in unique_frames:
+                                x,y,z = get_coordinates(i,self,j)
+                                if not x and not y and not z:
+                                        storage_x.append(np.nan)
+                                        storage_y.append(np.nan)
+                                        storage_z.append(np.nan)
+                                else:
+                                        storage_x.append(x[0])
+                                        storage_y.append(y[0])
+                                        storage_z.append(z[0])
+                                        
+                        track_list_x.append(np.array(storage_x))
+                        track_list_y.append(np.array(storage_y))
+                        track_list_z.append(np.array(storage_z))
+                        
+                 # Initialize the plot
+                fig, ax = plt.subplots()
+                ax.set(xlim=(self.min_max['X-Min']-3, self.min_max['X-Max']+3), ylim=(self.min_max['Y-Min']-3, self.min_max['Y-Max']+3))
+                ## Create empty plot lines for each track
+                lines = [ax.plot([], [], lw = 0.5, color=self.track_colors[_])[0] for _ in range(self.ntracks)]
+                # # Function to update the plot for each frame
+                black_patch = mpatches.Patch(color='black',label="X+ Y+")
+                red_patch = mpatches.Patch(color='red',label = "X+ Y-" )
+                lime_patch = mpatches.Patch(color='lime',label = 'X- Y+')
+                blue_patch = mpatches.Patch(color='blue',label = 'X- Y-')
+                def update(frame,fade = False,fade_num = 20):
+                        frame = int(frame)
+                        index = int(frame - min(unique_frames))
+                        if index > fade_num and fade == True:
+                                fade_index = index - fade_num
+                        else:
+                                fade_index = 0
+                        for i, line in enumerate(lines):
+                                line.set_data(track_list_x[i][fade_index:index],track_list_y[i][fade_index:index])
+                        ax.legend(handles=[black_patch,red_patch,lime_patch,blue_patch])
+                        # ax.legend()  # Update legend
+                        ax.set_xlabel("X" + self.space_units)
+                        ax.set_ylabel("Y" + self.space_units)
+                        ax.set_title(f'Time(s): {(frame*self.frameinterval):.2f}')
+                        return lines
+                # # Create the animation
+                # #interval is milliseconds between each frame
+                anim = animation.FuncAnimation(fig, update, frames=unique_frames, interval=milli_per_frame, blit=False, fargs=(fade, fade_num))
+
+                # # To save the animation using Pillow as a gif
+                writer = animation.PillowWriter(fps=a_fps,
+                                                metadata=dict(artist='Me'),
+                                                bitrate=1800)
+                anim.save(self.path + '\\' +self.name +"_tracks-colored_xy.gif",dpi=150, writer=writer)
+                # #                      
+def gaussian_kernal(size,std):
+    kernel = np.fromfunction(
+        lambda x,y: np.divide(1,2*np.pi* std**2) * 
+        np.exp(
+            -((x-(size-1)/2)**2 + (y-(size-1)/2)**2) / (2* std**2)
+               ),
+        (size,size)
+    )
+    return np.array(kernel/np.sum(kernel))
+def find(frame,mask,contour,pixelSize):
+
+    """
+    This function takes in an image and draws the given contours.  It returns an inverted boolean array
+    where true = pixel within a contour. This gives the number of pixels within a given contour to calculate area, as well as the 
+    starting point for blob labeling and tracking.
+    """
+    #dont want to edit the original image
+    filled_mask = np.copy(mask)
+    #draw the contour
+    filled_mask = cv.drawContours(filled_mask,[contour], 0,(0, 255, 0),thickness=cv.FILLED)
+    #boolean mask and returning it, ensuring true = 0, false = 1. The sum of this is pixel size. 
+    image_mask = filled_mask > 0
+    total_pixels = np.sum(~image_mask.astype(int))
+    image_mask = ~image_mask
+    total_pixels = np.sum(image_mask.astype(int))
+    #output [frame, x,y, Area, TotalIntensity]
+    total_intensity = np.sum(mask*(image_mask.astype(int)))
+    ##Find X,Y center of mass based on contours. 
+    #https://docs.opencv.org/3.4/dd/d49/tutorial_py_contour_features.html
+    M = cv.moments(contour)
+    x = int(M['m10']/M['m00'])
+    y = int(M['m01']/M['m00'])
+    #in units of pixelSize(micron squared)
+    total_area = total_pixels*(pixelSize**2)
+    return [frame,[x,y],total_area,total_intensity]
+def flatten_coords(list_of_lists):
+    return [sublist[1] for sublist in list_of_lists if len(sublist) > 1]
+kernel = gaussian_kernal(3,np.sqrt(3))
+low_thresh: int = 13
+high_thresh: int = 50
+#contour filtering
+# we want anything equal to or greater than 5
+filter_val:int = 10
+##Pixel Size. This is used for area calculations. Where the area of a pixel is pixelSize**2
+pixel_size: float = 0.115 
+
+tiff_stack = io.imread("/Users/cmdb/Quant_Bio_Project/Quant-Bio-Project/cell2.tif",plugin='tifffile')
+tiff_stack = (tiff_stack/256).astype(np.uint8)
+copied = np.copy(tiff_stack)
+frame_dict = {}
+for i in range(len(tiff_stack)):
+    ret,thresh = cv.threshold(tiff_stack[i,:,:],low_thresh,high_thresh,cv.THRESH_BINARY)
+    contours,hierarchy = cv.findContours(thresh, 1, 2)
+    #filtering out contours less than 10
+    contours = [lst for lst in contours if len(lst) >= filter_val]
+    frame_dict[f"Timepoint {i}"] = []
+    for j in contours:
+        #thresholding step needed to skip bad areas. Area == 0 is nothing. 
+        area = cv.moments(j)["m00"]
+        if area > 0:
+            centroid_output = find(i,copied[i,:,:],j,pixel_size)
+            frame_dict[f"Timepoint {i}"].append(centroid_output)
+
+list_of_keys = sorted(frame_dict.keys())
+blobs = Objects(frame_dict)
+keys = list(blobs.frames.keys())
+#len(keys) -1
+for i in range(len(keys)-1):
+    blobs.new_input(n=keys[i],n1=keys[i+1])
+blobs.updateblobs(15)
+blobs.msd_compute()
+blobs.calc_diffusion()
+
+blobs.animate_xy(a_fps=30,milli_per_frame=1000)
+
+
