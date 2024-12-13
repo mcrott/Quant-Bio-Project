@@ -455,72 +455,7 @@ class Objects:
                         plt.savefig(self.path + '\\' +self.name +"_msd-plot.pdf",dpi=300,format='pdf')
                 else:
                         plt.savefig(r"mean_msd_plot.png",dpi=300) 
-    def animate_xy(self,a_fps,milli_per_frame,fade = False, fade_num = 20):
-
-                self.min_max = {'X-Max': 256, 'X-Min': 0,'Y-Max': 256, 'Y-Min': 0,  }
-                unique_frames = range(len(self.frames.keys()))
-                #this should pull the coordinates for each track 
-                def get_coordinates(frame, obj,track_num):
-                        indices = obj.blobs[track_num] == frame
-                        return self.x[track_num][indices],self.y[track_num][indices]
-                track_list_x = []
-                track_list_y = []
-                track_list_z = []
-                #these lines will fill in your x coords with np.nans. so if your length is 1000 but a track is only visable for 300-500, then 1-299 and 501-1000 will be np.nan
-                for j in range(self.num_blobs):
-                        storage_x = []
-                        storage_y = []
-                        storage_z = []
-                        for i in unique_frames:
-                                x,y,z = get_coordinates(i,self,j)
-                                if not x and not y and not z:
-                                        storage_x.append(np.nan)
-                                        storage_y.append(np.nan)
-                                        storage_z.append(np.nan)
-                                else:
-                                        storage_x.append(x[0])
-                                        storage_y.append(y[0])
-                                        storage_z.append(z[0])
-                                        
-                        track_list_x.append(np.array(storage_x))
-                        track_list_y.append(np.array(storage_y))
-                        track_list_z.append(np.array(storage_z))
-                        
-                 # Initialize the plot
-                fig, ax = plt.subplots()
-                ax.set(xlim=(self.min_max['X-Min']-3, self.min_max['X-Max']+3), ylim=(self.min_max['Y-Min']-3, self.min_max['Y-Max']+3))
-                ## Create empty plot lines for each track
-                lines = [ax.plot([], [], lw = 0.5, color=self.track_colors[_])[0] for _ in range(self.ntracks)]
-                # # Function to update the plot for each frame
-                black_patch = mpatches.Patch(color='black',label="X+ Y+")
-                red_patch = mpatches.Patch(color='red',label = "X+ Y-" )
-                lime_patch = mpatches.Patch(color='lime',label = 'X- Y+')
-                blue_patch = mpatches.Patch(color='blue',label = 'X- Y-')
-                def update(frame,fade = False,fade_num = 20):
-                        frame = int(frame)
-                        index = int(frame - min(unique_frames))
-                        if index > fade_num and fade == True:
-                                fade_index = index - fade_num
-                        else:
-                                fade_index = 0
-                        for i, line in enumerate(lines):
-                                line.set_data(track_list_x[i][fade_index:index],track_list_y[i][fade_index:index])
-                        ax.legend(handles=[black_patch,red_patch,lime_patch,blue_patch])
-                        # ax.legend()  # Update legend
-                        ax.set_xlabel("X" + self.space_units)
-                        ax.set_ylabel("Y" + self.space_units)
-                        ax.set_title(f'Time(s): {(frame*self.frameinterval):.2f}')
-                        return lines
-                # # Create the animation
-                # #interval is milliseconds between each frame
-                anim = animation.FuncAnimation(fig, update, frames=unique_frames, interval=milli_per_frame, blit=False, fargs=(fade, fade_num))
-
-                # # To save the animation using Pillow as a gif
-                writer = animation.PillowWriter(fps=a_fps,
-                                                metadata=dict(artist='Me'),
-                                                bitrate=1800)
-                anim.save(self.path + '\\' +self.name +"_tracks-colored_xy.gif",dpi=150, writer=writer)
-                # #                      
+  
 def gaussian_kernal(size,std):
     kernel = np.fromfunction(
         lambda x,y: np.divide(1,2*np.pi* std**2) * 
@@ -591,15 +526,38 @@ keys = list(blobs.frames.keys())
 #len(keys) -1
 for i in range(len(keys)-1):
     blobs.new_input(n=keys[i],n1=keys[i+1])
-blobs.updateblobs(15)
-blobs.msd_compute()
-blobs.calc_mean_msd()
-blobs.calc_diffusion()
+#filtering blobs based on length. Blobs with len < 15 are removed
 blobs.pull_out_xy_vals()
 blobs.post_filter_plot_tracks()
+blobs.updateblobs(15)
+#computing the MSD for each blob
+blobs.msd_compute()
+#computing the mean MSD for the image
+blobs.calc_mean_msd()
+#calculating diffusion based on the mean MSD
+blobs.calc_diffusion()
+#extracting x,y coords for each blob for plotting
+#plotting tracks post filtering
+# blobs.post_filter_plot_tracks()
 blobs.plot_mean_msd_diffusion()
 blobs.plot_msd()
 
-# blobs.animate_xy(a_fps=30,milli_per_frame=1000)
+##ethans code
+key_list = list(blobs.blobs.keys())
 
-
+for i in range(len(list(blobs.blobs.keys()))):
+    time_list = []
+    area_list = []
+    intensity_list = []
+    for j in range(len(blobs.blobs[key_list[i]])):
+        time_list.append(blobs.blobs[key_list[i]][j][0])
+        area = float(blobs.blobs[key_list[i]][j][2])
+        area_list.append(area)
+        intensity = float(blobs.blobs[key_list[i]][j][3])
+        intensity_list.append(intensity)
+    plt.plot(time_list, intensity_list, label = key_list[i])
+plt.title('Granule intensity over time')  # Title of the plot
+plt.xlabel('Time')  # x-axis label
+plt.ylabel('Intensity')  # y-axis label
+plt.legend(loc='upper left', bbox_to_anchor=(1, 1))  # Moves the legend outside the plot to the right
+plt.show()
